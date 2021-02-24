@@ -21,6 +21,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1beta1"
+	"k8s.io/autoscaler/cluster-autoscaler/utils"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/drain"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/errors"
 	schedulernodeinfo "k8s.io/kubernetes/pkg/scheduler/nodeinfo"
@@ -70,6 +71,7 @@ func BuildNodeInfoForNode(node *apiv1.Node, podsForNodes map[string][]*apiv1.Pod
 		return nil, err
 	}
 	result := schedulernodeinfo.NewNodeInfo(requiredPods...)
+	utils.MaxNetworkResourceFromNode(node)
 	if err := result.SetNode(node); err != nil {
 		return nil, errors.ToAutoscalerError(errors.InternalError, err)
 	}

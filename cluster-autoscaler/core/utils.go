@@ -226,7 +226,7 @@ func (c *podsSchedulableOnNodeChecker) checkPodsSchedulableOnNode(nodeGroupId st
 			schedulingErrors[equivalenceGroup] = err
 			if err != nil {
 				// Always log for the first pod in a controller.
-				klog.V(2).Infof("Pod %s can't be scheduled on %s, predicate failed: %v", pod.Name, nodeGroupId, err.VerboseError())
+				klog.V(2).Infof("Pod %s can't be scheduled on %s, predicate failed: %v, nodeinfo: %+v", pod.Name, nodeGroupId, err.VerboseError(), nodeInfo.Node())
 			}
 		}
 	}

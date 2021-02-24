@@ -113,6 +113,7 @@ func filterOutSchedulableByPacking(unschedulableCandidates []*apiv1.Pod, nodes [
 	for _, pod := range unschedulableCandidates {
 		nodeName, err := predicateChecker.FitsAny(pod, nodeNameToNodeInfo)
 		if err != nil {
+			klog.V(4).Infof("Pod %s marked as unschedulable can NOT be scheduled on node %+v, due to %+v", pod.Name, nodeNameToNodeInfo, err)
 			unschedulablePods = append(unschedulablePods, pod)
 		} else {
 			var nodeType string

@@ -266,16 +266,20 @@ func (p *PredicateChecker) GetPredicateMetadata(pod *apiv1.Pod, nodeInfos map[st
 
 // FitsAny checks if the given pod can be place on any of the given nodes.
 func (p *PredicateChecker) FitsAny(pod *apiv1.Pod, nodeInfos map[string]*schedulernodeinfo.NodeInfo) (string, error) {
+	errs := make([]error, 0)
 	for name, nodeInfo := range nodeInfos {
 		// Be sure that the node is schedulable.
 		if nodeInfo.Node().Spec.Unschedulable {
 			continue
 		}
-		if err := p.CheckPredicates(pod, nil, nodeInfo); err == nil {
+		err := p.CheckPredicates(pod, nil, nodeInfo)
+		if err == nil {
 			return name, nil
+		} else {
+			errs = append(errs, err)
 		}
 	}
-	return "", fmt.Errorf("cannot put pod %s on any node", pod.Name)
+	return "", fmt.Errorf("cannot put pod %s on any node, due to %+v", pod.Name, errs)
 }
 
 // PredicateError implements error, preserving the original error information from scheduler predicate.

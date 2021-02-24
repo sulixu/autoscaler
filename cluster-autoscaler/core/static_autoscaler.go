@@ -218,6 +218,9 @@ func (a *StaticAutoscaler) RunOnce(currentTime time.Time) errors.AutoscalerError
 	if autoscalerError != nil {
 		return autoscalerError.AddPrefix("failed to build node infos for node groups: ")
 	}
+    for k, node := range nodeInfosForGroups {
+    	klog.V(4).Infof("getNodeInfoFromTemplate: %s node: %+v", k, node.Node())
+	}
 
 	typedErr = a.updateClusterState(allNodes, nodeInfosForGroups, currentTime)
 	if typedErr != nil {
