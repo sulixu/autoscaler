@@ -73,6 +73,9 @@ type StaticAutoscaler struct {
 	// Caches nodeInfo computed for previously seen nodes
 	nodeInfoCache map[string]*schedulernodeinfo.NodeInfo
 	ignoredTaints taintKeySet
+
+	// rate limiter to limit number of nodes in 1 scale up
+	scaleUpRateLimiter       *TokenBucketRateLimiter
 }
 
 type staticAutoscalerProcessorCallbacks struct {
@@ -134,6 +137,17 @@ func NewStaticAutoscaler(
 
 	scaleDown := NewScaleDown(autoscalingContext, clusterStateRegistry)
 
+	var scaleUpRateLimiter *TokenBucketRateLimiter
+
+	if opts.ScaleUpRateLimitEnabled && opts.ScaleUpMaxNumberOfNodesPerMin > 0 && opts.ScaleUpBurstMaxNumberOfNodesPerMin > 0{
+		scaleUpRateLimiter = &TokenBucketRateLimiter{
+			maxNumberOfNodesPerMin: opts.ScaleUpMaxNumberOfNodesPerMin,
+			burstMaxNumberOfNodesPerMin: opts.ScaleUpBurstMaxNumberOfNodesPerMin,
+			token: 0,
+			lastReserve: time.Now(),
+		}
+	}
+
 	return &StaticAutoscaler{
 		AutoscalingContext:      autoscalingContext,
 		startTime:               time.Now(),
@@ -146,6 +160,7 @@ func NewStaticAutoscaler(
 		clusterStateRegistry:    clusterStateRegistry,
 		nodeInfoCache:           make(map[string]*schedulernodeinfo.NodeInfo),
 		ignoredTaints:           ignoredTaints,
+		scaleUpRateLimiter:      scaleUpRateLimiter,
 	}
 }
 
@@ -350,7 +365,7 @@ func (a *StaticAutoscaler) RunOnce(currentTime time.Time) errors.AutoscalerError
 		scaleUpStart := time.Now()
 		metrics.UpdateLastTime(metrics.ScaleUp, scaleUpStart)
 
-		scaleUpStatus, typedErr = ScaleUp(autoscalingContext, a.processors, a.clusterStateRegistry, unschedulablePodsToHelp, readyNodes, daemonsets, nodeInfosForGroups, a.ignoredTaints)
+		scaleUpStatus, typedErr = ScaleUp(autoscalingContext, a.processors, a.clusterStateRegistry, unschedulablePodsToHelp, readyNodes, daemonsets, nodeInfosForGroups, a.ignoredTaints, a.scaleUpRateLimiter)
 
 		metrics.UpdateDurationFromStart(metrics.ScaleUp, scaleUpStart)
 

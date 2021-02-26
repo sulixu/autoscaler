@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"sync"
 	"time"
 
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
@@ -66,6 +67,41 @@ var (
 		gkeNodeTerminationHandlerTaint:           true,
 	}
 )
+
+type TokenBucketRateLimiter struct {
+	// targeted number of nodes per min
+	maxNumberOfNodesPerMin int
+	burstMaxNumberOfNodesPerMin int
+	token int
+	lastReserve time.Time
+	mu sync.Mutex
+}
+
+func (t *TokenBucketRateLimiter) AcquireNodes(newNodes int) (bool, int) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	now := time.Now()
+	tokenNow := int(now.Sub(t.lastReserve).Minutes()) * t.maxNumberOfNodesPerMin + t.token
+	if tokenNow > t.burstMaxNumberOfNodesPerMin {
+		tokenNow = t.burstMaxNumberOfNodesPerMin
+	}
+
+	if tokenNow <= 0 {
+		// no quota, can not scale up
+		return false, 0
+	}
+
+	if newNodes > tokenNow {
+		// can only use up to (tokenNow) nodes, the rest (newNodes - tokenNow) nodes can not meet
+		t.token = 0
+		t.lastReserve = now
+		return true, tokenNow
+	}
+	t.token = tokenNow - newNodes
+	t.lastReserve = now
+	return true, newNodes
+}
 
 // Following data structure is used to avoid running predicates #pending_pods * #nodes
 // times (which turned out to be very expensive if there are thousands of pending pods).

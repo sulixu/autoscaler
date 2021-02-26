@@ -75,6 +75,11 @@ type AutoscalingOptions struct {
 	// MaxTotalUnreadyPercentage is the maximum percentage of unready nodes after which CA halts operations
 	MaxTotalUnreadyPercentage float64
 	// OkTotalUnreadyCount is the number of allowed unready nodes, irrespective of max-total-unready-percentage
+
+	ScaleUpRateLimitEnabled bool
+	ScaleUpMaxNumberOfNodesPerMin int
+	ScaleUpBurstMaxNumberOfNodesPerMin int
+
 	OkTotalUnreadyCount int
 	// ScaleUpFromZero defines if CA should scale up when there 0 ready nodes.
 	ScaleUpFromZero bool

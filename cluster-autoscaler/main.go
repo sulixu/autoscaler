@@ -172,6 +172,10 @@ var (
 
 	ignoreTaintsFlag         = multiStringFlag("ignore-taint", "Specifies a taint to ignore in node templates when considering to scale a node group")
 	awsUseStaticInstanceList = flag.Bool("aws-use-static-instance-list", false, "Should CA fetch instance types in runtime or use a static list. AWS only")
+
+	scaleUpRateLimitEnabledFlag = flag.Bool("scale-up-rate-limit-enabled", false, "Should CA enable scale-up ratelimiting")
+	scaleUpMaxNumberOfNodesPerMin = flag.Int("scale-up-max-number-nodes-per-min", -1, "Maximum number of nodes CA can scale up in 1 iteration")
+	scaleUpBurstNumberOfNodesPerMin = flag.Int("scale-up-burst-number-nodes-per-min", -1, "Maximum burst number of nodes CA can scale up in 1 iteration")
 )
 
 func createAutoscalingOptions() config.AutoscalingOptions {
@@ -239,6 +243,10 @@ func createAutoscalingOptions() config.AutoscalingOptions {
 		IgnoredTaints:                       *ignoreTaintsFlag,
 		NodeDeletionDelayTimeout:            *nodeDeletionDelayTimeout,
 		AWSUseStaticInstanceList:            *awsUseStaticInstanceList,
+
+		ScaleUpRateLimitEnabled:             *scaleUpRateLimitEnabledFlag,
+		ScaleUpBurstMaxNumberOfNodesPerMin:  *scaleUpBurstNumberOfNodesPerMin,
+		ScaleUpMaxNumberOfNodesPerMin:       *scaleUpMaxNumberOfNodesPerMin,
 	}
 }
 
